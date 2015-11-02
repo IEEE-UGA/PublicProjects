@@ -1,0 +1,204 @@
+/*
+ * Ben Burgh
+ * UGA IEEE Softare Team
+ * Barcode Scanner
+ * October 2015
+ * All rights reserved, incorporated
+ */
+
+
+import java.util.Scanner;
+import java.io.*;
+import java.util.Date;
+import java.net.*;
+
+
+public class BarcodeScanner {
+
+	public static void main(String[] args) throws IOException {
+		
+		//Try to update database here
+		String ieeeURL = "ieee.uga.edu/signin.php";
+		String testRead = "http://randomword.setgetgo.com/get.php";
+		
+		//Reads text from a website - can use for database
+		URL website = new URL(testRead);
+		URLConnection connection = website.openConnection();
+		Scanner websiteReader = new Scanner(connection.getInputStream());
+		System.out.println(websiteReader.nextLine());
+		
+		
+		
+		//Create strings directing the program to the files
+		Date now = new Date();
+		String folderAddress = "D:\\IEEE\\";
+		String databaseAddress = folderAddress + "localDatabase.txt";
+		String attendanceAddress = folderAddress + "attendance" + now.getMonth() +"_" + now.getDate() + ".txt";
+		String newPeopleAddress = folderAddress + "newPeople";
+
+		//Create localDatabase to read from and attendance to write to
+		File localDatabase = new File (databaseAddress);
+		File attendanceFile = new File (attendanceAddress);
+		File newPeopleFile = new File(newPeopleAddress);
+		//new people file helps to keep track of everything
+		
+		if(!localDatabase.exists())
+		{
+			System.out.println("Creating " + databaseAddress);
+			localDatabase.mkdirs();
+			localDatabase.createNewFile();
+		}
+		
+		if(!attendanceFile.exists())
+		{
+			System.out.println("Creating " + attendanceAddress);
+			attendanceFile.createNewFile();
+		}
+		
+		if(!newPeopleFile.exists())
+		{
+			System.out.println("Creating " + newPeopleAddress);
+			newPeopleFile.createNewFile();
+		}
+		
+		PrintStream attendance = new PrintStream(attendanceFile);
+		PrintStream newPeople = new PrintStream(newPeopleFile);
+		
+		//Keeps track if any new people register
+		boolean newPerson = false;
+		
+		//Establish keyboard input
+		Scanner keyboard = new Scanner(System.in);
+		String input = "";
+		System.out.println("Hello!");
+		
+		do{
+			/*Wait for keyboard input.
+			 * Keywords:
+			 * new - enter a new person
+			 * cancel - cancel the process of creating a person
+			 * exit - finish scanning
+			 */
+			System.out.println();
+			System.out.println("Scan a number, or enter exit to finish, or enter new to enter a new person");
+			boolean match = false;
+			input = keyboard.nextLine();
+			
+			//Exit if input is exit
+			if (input.equalsIgnoreCase("exit"))
+			{
+				break;
+			} else if (input.equalsIgnoreCase("new"))
+			{	
+				String number811, myID, name;
+				do{
+					//Ask for credentials
+					System.out.println("First, scan your card");
+					number811 = keyboard.nextLine();
+					if (number811.length() == 16)
+						number811 = number811.substring(6, 15);
+					//Trim the 6XXX barcode to 811 number
+					System.out.println("Good. Now enter your UGA myID (ex. abc12345)");
+					myID = keyboard.nextLine();
+					System.out.println("Finally, enter your first and last name");
+					name = keyboard.nextLine();
+					
+					System.out.println("\nNumber: " + number811);
+					System.out.println("UGA myID: " + myID);
+					System.out.println("Full name: " + name);
+					System.out.print("Is this correct? Enter yes or no, or cancel to cancel - ");
+					//Check that the input is correct
+					
+					String answer = keyboard.nextLine();
+					
+					if (answer.equalsIgnoreCase("yes") || answer.equalsIgnoreCase("y"))
+					{
+						match = true;
+						newPerson = true;
+					} else if (answer.equalsIgnoreCase("cancel"))
+					{
+						break;
+					}
+				} while (match == false);
+				
+				//Match is only true if string "answer" is yes,
+				//So will not write to database if canceled
+				if (match == true)
+				{
+					newPeople.println(number811 + " " + myID + " " + name);
+					attendance.println(myID);
+				}
+			} else //if input is not "exit" or "new", it is a person
+			{
+				if (input.length()==16)
+					input = input.substring(6, 15);
+			
+				//Create a scanner to read from the local database
+				Scanner fileScanner = new Scanner(localDatabase);
+				//...and keep scanning
+				while(fileScanner.hasNext())
+				{
+					//...until you find a match with the correct number
+					if(input.equalsIgnoreCase(fileScanner.next().trim()))
+					{
+						//...at which point you write the myID to the attendance file
+						attendance.println(fileScanner.next());
+						System.out.println("Match found!" + fileScanner.nextLine());
+						//Mark match as true to signify we found it
+						match = true;
+						break;
+					}
+				}
+				
+				if (match == false)
+				{
+					System.out.println("Match not found. Enter new if you are new");
+				}
+				
+				//Close the File Scanner
+				fileScanner.close();
+			}
+		} while(!input.equalsIgnoreCase("exit"));
+		
+		//Close attendance file and keyboard input, since we are done
+		attendance.close();
+		keyboard.close();
+		newPeople.close();
+		
+		//Attempt to upload the data to the server
+		//Attempt to upload the data to the server
+		//Attempt to upload the data to the server
+		
+		if (newPerson)
+		{
+			Scanner fileScanner = new Scanner(localDatabase);
+			PrintStream move = new PrintStream(newPeopleFile);
+
+			while(fileScanner.hasNext())
+			{
+				move.println(fileScanner.nextLine());
+			}
+			fileScanner.close();
+			move.close();
+			
+			Scanner scanFile = new Scanner(newPeopleFile);
+			PrintStream updateDatabase = new PrintStream(localDatabase);
+			while(scanFile.hasNext())
+			{
+				updateDatabase.println(scanFile.nextLine());
+			}
+			scanFile.close();
+			updateDatabase.close();
+		}
+		
+		
+		
+		
+		
+		
+		
+		System.out.print("goodbye");
+		
+	}
+
+}
